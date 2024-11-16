@@ -1,6 +1,7 @@
 const express = require('express');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const cors = require('cors');
+const fetch = require('node-fetch');  // Add this line to import node-fetch
 require('dotenv').config();
 
 const app = express();
