@@ -61,6 +61,8 @@ const GameScreen = () => {
   }, [gameHistory]);
 
   const parseAIResponse = (response) => {
+    console.log('AI Response:', response);  // Log the response from the AI
+  
     if (typeof response === 'string') {
       const [description, ...choices] = response.split('||');
       return { description, choices };
