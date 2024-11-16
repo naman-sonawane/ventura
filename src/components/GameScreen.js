@@ -61,9 +61,15 @@ const GameScreen = () => {
   }, [gameHistory]);
 
   const parseAIResponse = (response) => {
-    const [description, ...choices] = response.split('||');
-    return { description, choices };
+    if (typeof response === 'string') {
+      const [description, ...choices] = response.split('||');
+      return { description, choices };
+    } else {
+      console.error('Expected string response, but got:', response);
+      return { description: 'Error: Unable to parse response.', choices: [] };
+    }
   };
+  
 
   const handleChoice = async (choice) => {
     setLoading(true);
