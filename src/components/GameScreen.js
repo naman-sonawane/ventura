@@ -18,26 +18,29 @@ const GameScreen = () => {
     setDifficulty(storedDifficulty);
   }, []);
 
-  // Get dark mode preference from localStorage
+  // Get dark mode preference from localStorage on initial load
   useEffect(() => {
-    const storedDarkMode = localStorage.getItem('darkMode') === 'true'; // Get stored dark mode setting
-    setDark(storedDarkMode);
-    if (storedDarkMode) {
-      document.body.classList.add('dark'); // Apply dark class to body if dark mode is enabled
+    const storedDarkMode = localStorage.getItem('darkMode');
+    const isDarkMode = storedDarkMode ? storedDarkMode === 'true' : false; // Default to false if not found
+    setDark(isDarkMode); // Set state based on stored preference
+
+    // Apply dark mode class to the body
+    if (isDarkMode) {
+      document.body.classList.add('dark');
     } else {
-      document.body.classList.remove('dark'); // Otherwise remove it
+      document.body.classList.remove('dark');
     }
-  }, []);
+  }, []);  // Empty dependency ensures this runs only once when the component mounts
 
   // Save dark mode setting to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('darkMode', dark);  // Store dark mode setting
+    localStorage.setItem('darkMode', dark.toString());  // Store dark mode setting in localStorage
     if (dark) {
-      document.body.classList.add('dark');  // Add the dark class to body for dark mode
+      document.body.classList.add('dark');  // Apply dark class if dark mode is enabled
     } else {
-      document.body.classList.remove('dark'); // Remove the dark class for light mode
+      document.body.classList.remove('dark'); // Remove dark class if light mode is enabled
     }
-  }, [dark]);
+  }, [dark]);  // Dependency array includes `dark` to trigger whenever it changes
 
   // Function to handle AI response and parse choices
   const parseAIResponse = (response) => {
@@ -49,7 +52,7 @@ const GameScreen = () => {
   const handleChoice = async (choice) => {
     setLoading(true);
     setChoiceCount((prevCount) => prevCount + 1);  // Increment choice count
-  
+
     try {
       const response = await fetch('https://ventura-1.onrender.com/', {
         method: 'POST',
@@ -64,20 +67,20 @@ const GameScreen = () => {
           sessionId: 'some-unique-session-id',  // Include session ID
         }),
       });
-  
+
       const data = await response.json();
-  
+
       // Check if the game is over and handle accordingly
       if (data.response.includes('Game Over')) {
         setGameHistory((prev) => [...prev, { choice, response: data.response }]);
         setCurrentScene({ description: data.response, choices: [] });  // No options for the final scene
         return;  // No further processing
       }
-  
+
       const parsedResponse = parseAIResponse(data.response);
       setGameHistory((prev) => [...prev, { choice, response: parsedResponse.description }]);  // Add to history
       setCurrentScene(parsedResponse);  // Set new scene
-  
+
     } catch (error) {
       console.error('Error:', error);
     }
