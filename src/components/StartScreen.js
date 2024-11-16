@@ -5,7 +5,7 @@ import { IoMoon, IoSunny } from 'react-icons/io5';  // Moon and Sun icons
 const StartScreen = () => {
   const navigate = useNavigate();
   const [difficulty, setDifficulty] = useState('easy');
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(true); // Change this to true for dark mode by default
 
   useEffect(() => {
     // Load dark mode preference from localStorage
@@ -13,6 +13,8 @@ const StartScreen = () => {
     setDark(storedDarkMode);
     if (storedDarkMode) {
       document.body.classList.add('dark');
+    } else {
+      document.body.classList.remove('dark'); // Ensure light mode is applied if not dark
     }
   }, []);
 
@@ -77,7 +79,6 @@ const StartScreen = () => {
       </div>
     </div>
   );
-  
 };
 
 export default StartScreen;
