@@ -4,20 +4,23 @@ require('dotenv').config();
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
 app.use(express.json()); // Make sure we can parse JSON bodies
+
+// Enable CORS for your frontend domain
+app.use(cors({
+  origin: 'https://ventura-webapp.vercel.app',  // Frontend URL
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+}));
 
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// POST Request to the root ("/")
+// POST Request to handle story generation
 app.post('/', async (req, res) => {
   const { currentChoice, difficulty, gameHistory } = req.body;
 
   try {
-    // Get the model
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-
     // Prepare the context for the AI based on the game history
     let context = '';
 
@@ -60,7 +63,10 @@ app.post('/', async (req, res) => {
       `;
     }
 
-    console.log(context)
+    console.log('Game History Context:', context);
+
+    // Get the model
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
     // Generate content based on the prompt
     const result = await model.generateContent({
