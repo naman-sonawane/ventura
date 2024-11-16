@@ -51,7 +51,7 @@ const GameScreen = () => {
     setChoiceCount((prevCount) => prevCount + 1);  // Increment choice count
   
     try {
-      const response = await fetch('/api/generate-story', {
+      const response = await fetch('https://ventura-1.onrender.com/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
