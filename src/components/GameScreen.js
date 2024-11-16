@@ -83,7 +83,6 @@ const GameScreen = () => {
     }
     setLoading(false);
   };
-  
 
   // Function to split text into chunks, avoiding word breaks
   const splitTextIntoChunks = (text, maxLength = 85) => {
