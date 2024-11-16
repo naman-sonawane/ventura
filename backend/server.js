@@ -2,10 +2,9 @@ const express = require('express');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
 const cors = require('cors');
-const fetch = require('node-fetch');  // Import node-fetch
 
-// Make fetch available globally
-globalThis.fetch = fetch;  // Ensure fetch is available globally
+// Dynamic import for node-fetch
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 const app = express();
 app.use(express.json());
