@@ -24,7 +24,7 @@ const GameScreen = () => {
     setDark(storedDarkMode); // Set state based on stored preference
 
     // Apply dark mode class to the body
-    if (isDarkMode) {
+    if (storedDarkMode) {
       document.body.classList.add('dark');
     } else {
       document.body.classList.remove('dark');
