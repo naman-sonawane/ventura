@@ -21,8 +21,7 @@ const GameScreen = () => {
   // Get dark mode preference from localStorage on initial load
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
-    const isDarkMode = storedDarkMode ? storedDarkMode === 'true' : false; // Default to false if not found
-    setDark(isDarkMode); // Set state based on stored preference
+    setDark(storedDarkMode); // Set state based on stored preference
 
     // Apply dark mode class to the body
     if (isDarkMode) {
