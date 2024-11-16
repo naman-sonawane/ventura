@@ -2,6 +2,10 @@ const express = require('express');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
 const cors = require('cors');
+const fetch = require('node-fetch');  // Import node-fetch
+
+// Make fetch available globally
+globalThis.fetch = fetch;  // Ensure fetch is available globally
 
 const app = express();
 app.use(express.json());
@@ -43,22 +47,21 @@ app.post('/api/generate-story', async (req, res) => {
 
     // Adjust prompt based on difficulty and choice count
     const prompt = `
-  You are a text adventure game master. Based on the player's choice: "${currentChoice}", generate the next scene (10-30 words) with 1-3 meaningful options.
+    You are a text adventure game master. Based on the player's choice: "${currentChoice}", generate the next scene (10-30 words) with 1-3 meaningful options.
 
-  Adjust plot complexity based on difficulty: "${difficulty}". If "Easy", keep the plot simple. If "Hard", make it more complex or dangerous.
+    Adjust plot complexity based on difficulty: "${difficulty}". If "Easy", keep the plot simple. If "Hard", make it more complex or dangerous.
 
-  If the player makes a fatal decision (e.g., poking a snake, touching fire, trusting a shady person), end the game immediately with how they lost and no options.
-  If the player makes a positive decision or reaches a good outcome (e.g., discovering treasure/artifact/place, winning trust), end the game with a satisfying win message with no options.
-  Do not repeat previous scenes or choices. Ensure the story progresses with new challenges, characters, or locations. Do not recycle options.
+    If the player makes a fatal decision (e.g., poking a snake, touching fire, trusting a shady person), end the game immediately with how they lost and no options.
+    If the player makes a positive decision or reaches a good outcome (e.g., discovering treasure/artifact/place, winning trust), end the game with a satisfying win message with no options.
+    Do not repeat previous scenes or choices. Ensure the story progresses with new challenges, characters, or locations. Do not recycle options.
 
-  Choices made: ${choiceCount}. Current context: ${session.context}.
+    Choices made: ${choiceCount}. Current context: ${session.context}.
 
-  Format your response as:  
-  "You walk down the path, the trees parting to reveal a small clearing. A large stone is at the center. You hear faint footsteps approaching from behind." || Look around the stone || Wait and see who is approaching || Continue down the path
+    Format your response as:  
+    "You walk down the path, the trees parting to reveal a small clearing. A large stone is at the center. You hear faint footsteps approaching from behind." || Look around the stone || Wait and see who is approaching || Continue down the path
 
-  Ensure choices the scenes do not repeat and progress story.
-`;
-
+    Ensure choices the scenes do not repeat and progress story.
+    `;
 
     // Generate content
     const result = await model.generateContent({
@@ -81,7 +84,6 @@ app.post('/api/generate-story', async (req, res) => {
     res.status(500).json({ error: 'Failed to generate story' });
   }
 });
-
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
