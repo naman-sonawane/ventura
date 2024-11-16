@@ -23,9 +23,9 @@ const GameScreen = () => {
     const storedDarkMode = localStorage.getItem('darkMode') === 'true'; // Get stored dark mode setting
     setDark(storedDarkMode);
     if (storedDarkMode) {
-      document.body.classList.remove('dark'); // Apply dark class to body if dark mode is enabled
+      document.body.classList.add('dark'); // Apply dark class to body if dark mode is enabled
     } else {
-      document.body.classList.add('dark'); // Otherwise remove it
+      document.body.classList.remove('dark'); // Otherwise remove it
     }
   }, []);
 
