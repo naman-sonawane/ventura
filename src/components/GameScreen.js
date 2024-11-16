@@ -1,24 +1,24 @@
+import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import TextGenerateEffect from './TextGenerate';  // Import the TextGenerateEffect
 import { IoMoon, IoSunny } from 'react-icons/io5';  // Moon and Sun icons
 
 const GameScreen = () => {
+  const navigate = useNavigate();
   const [currentScene, setCurrentScene] = useState(null);
   const [loading, setLoading] = useState(false);
   const [difficulty, setDifficulty] = useState('easy');
-  const [choiceCount, setChoiceCount] = useState(0);
   const [dark, setDark] = useState(false);
   const [gameHistory, setGameHistory] = useState([]);
+  const [isGameRestarted, setIsGameRestarted] = useState(false); // Track game restart
 
   const hasGameStarted = useRef(false);  // Track if the game has started
 
-  // Load saved difficulty from localStorage
   useEffect(() => {
     const storedDifficulty = localStorage.getItem('gameDifficulty') || 'easy';
     setDifficulty(storedDifficulty);
   }, []);
 
-  // Load dark mode preference from localStorage
   useEffect(() => {
     const storedDarkMode = localStorage.getItem('darkMode');
     const isDarkMode = storedDarkMode ? storedDarkMode === 'true' : true;
@@ -42,18 +42,23 @@ const GameScreen = () => {
     localStorage.setItem('darkMode', newDarkMode.toString());
   };
 
-  // Load game history from localStorage
   useEffect(() => {
-    const savedHistory = JSON.parse(localStorage.getItem('gameHistory')) || [];
-    setGameHistory(savedHistory);
+    if (!isGameRestarted) {
+      const savedHistory = JSON.parse(localStorage.getItem('gameHistory')) || [];
+      setGameHistory(savedHistory);
 
-    if (savedHistory.length === 0 && !hasGameStarted.current) {
-      handleChoice('start');  // Start a new game if no history
-      hasGameStarted.current = true;
+      if (savedHistory.length === 0 && !hasGameStarted.current) {
+        handleChoice('start');
+        hasGameStarted.current = true;
+      }
     }
-  }, []);
 
-  // Save game history to localStorage
+    // Reset the isGameRestarted state after loading the history
+    return () => {
+      setIsGameRestarted(false);
+    };
+  }, [isGameRestarted]);
+
   useEffect(() => {
     if (gameHistory.length > 0) {
       localStorage.setItem('gameHistory', JSON.stringify(gameHistory));
@@ -61,35 +66,31 @@ const GameScreen = () => {
   }, [gameHistory]);
 
   const parseAIResponse = (response) => {
-    console.log('AI Response:', response);  // Log the response from the AI
-  
     if (typeof response === 'string') {
-      const [description, ...choices] = response.split('||');
+      const [description, ...choices] = response.trim().split('||');
       return { description, choices };
     } else {
       console.error('Expected string response, but got:', response);
       return { description: 'Error: Unable to parse response.', choices: [] };
     }
   };
-  
 
   const handleChoice = async (choice) => {
     setLoading(true);
-    setChoiceCount((prevCount) => prevCount + 1);
 
     try {
-      const response = await fetch('https://ventura-1.onrender.com/', {
+      const response = await fetch('http://localhost:3001/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           currentChoice: choice,
-          gameHistory,  // Send the full game history to the server
+          gameHistory: choice == 'start' ? [] : gameHistory, // Fix the key-value pair here
           difficulty,
-          choiceCount: choiceCount + 1,
         }),
       });
+      
 
       const data = await response.json();
       const parsedResponse = parseAIResponse(data.response);
@@ -102,7 +103,6 @@ const GameScreen = () => {
     setLoading(false);
   };
 
-  // Split text into chunks to avoid word breaks
   const splitTextIntoChunks = (text, maxLength = 85) => {
     const chunks = [];
     let currentIndex = 0;
@@ -120,6 +120,14 @@ const GameScreen = () => {
     return chunks;
   };
 
+  const handleRestart = () => {
+    localStorage.clear();  // Clear all stored values in localStorage
+    localStorage.setItem('gameDifficulty', difficulty);  // Store selected difficulty
+    navigate('/game');
+    window.location.reload();  // Reload the page
+    handleChoice('start')
+  };
+
   if (!currentScene) return <div>Loading...</div>;
 
   const descriptionChunks = splitTextIntoChunks(currentScene.description);
@@ -128,7 +136,6 @@ const GameScreen = () => {
     <div className={`w-screen h-screen flex ${dark ? 'bg-zinc-800' : 'bg-white'} flex-col`}>
       <div className={`container mx-auto px-4 py-8 ${dark ? 'bg-zinc-800' : 'bg-white'} flex-1 max-w-2xl relative overflow-auto`}>
         <div className="space-y-6">
-          {/* Display game history */}
           <div className="space-y-4">
             {gameHistory.map((item, index) => (
               <div key={index} className={`border-b ${dark ? 'border-white/20' : 'border-zinc-700'} pb-4`}>
@@ -138,20 +145,18 @@ const GameScreen = () => {
             ))}
           </div>
 
-          {/* Current Scene */}
           <div className={`${dark ? 'bg-zinc-700' : 'bg-gray-100'} p-6 rounded-lg`}>
             {descriptionChunks.map((chunk, index) => (
               <TextGenerateEffect key={index} text={chunk} duration={0.3} className="text-lg mb-4" />
             ))}
 
-            {/* Only show choices if there are any left */}
             {currentScene.choices.length > 0 && (
               <div className="space-y-2">
                 {currentScene.choices.map((choice, index) => (
                   <button
                     key={index}
                     onClick={() => handleChoice(choice)}
-                    disabled={loading || choiceCount >= 12}
+                    disabled={loading}
                     className={`w-full p-3 ${dark ? 'bg-zinc-200 text-zinc-800 hover:bg-zinc-300' : 'bg-zinc-600 text-white hover:bg-zinc-500'} rounded transition-colors disabled:opacity-50`}
                   >
                     {choice}
@@ -163,7 +168,6 @@ const GameScreen = () => {
         </div>
       </div>
 
-      {/* Footer */}
       <div className={`${dark ? 'text-white' : 'text-zinc-800'} p-4 mt-auto`}>
         <p className="font-bold">VENTURA</p>
         <p className="text-sm">
@@ -179,12 +183,18 @@ const GameScreen = () => {
         </p>
       </div>
 
-      {/* Dark Mode Toggle */}
       <button
         onClick={darkModeHandler}
         className={`absolute top-4 right-4 p-2 ${dark ? 'bg-zinc-700 text-white' : 'bg-zinc-300 text-zinc-800'} rounded-full hover:bg-zinc-600 dark:hover:bg-zinc-500 transition-colors`}
       >
         {dark ? <IoSunny size={24} /> : <IoMoon size={24} />}
+      </button>
+
+      <button
+        onClick={handleRestart}
+        className={`absolute bottom-4 right-4 p-3 ${dark ? 'bg-red-900 text-white' : 'bg-red-500 text-white'} rounded-lg shadow-lg hover:bg-red-700 transition-colors`}
+      >
+        Restart Game
       </button>
     </div>
   );
