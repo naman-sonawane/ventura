@@ -1,13 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    font-family: 'Abel', sans-serif;
+  }  
+
+  /* Style the scrollbar for Webkit browsers (Chrome, Safari, Edge, etc.) */
+::-webkit-scrollbar {
+  width: 8px; /* Thin scrollbar */
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+::-webkit-scrollbar-track {
+  background: #333; /* Dark background for the scrollbar track */
+  border-radius: 10px; /* Rounded corners for the track */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #666; /* Dark thumb color */
+  border-radius: 10px; /* Rounded corners for the thumb */
+  border: 2px solid #333; /* Optional: adds a border around the thumb for a better look */
+}
+
+/* Optional: Add hover effect to thumb for better interactivity */
+::-webkit-scrollbar-thumb:hover {
+  background: #888; /* Lighter shade on hover */
+}
+
+/* Firefox scrollbar styling */
+* {
+  scrollbar-width: thin; /* Thin scrollbar for Firefox */
+  scrollbar-color: #666 #333; /* Thumb color and track color */
 }
