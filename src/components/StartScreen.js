@@ -5,23 +5,33 @@ import { IoMoon, IoSunny } from 'react-icons/io5';  // Moon and Sun icons
 const StartScreen = () => {
   const navigate = useNavigate();
   const [difficulty, setDifficulty] = useState('easy');
-  const [dark, setDark] = useState(true); // Change this to true for dark mode by default
+  const [dark, setDark] = useState(true); // Default to dark mode
 
   useEffect(() => {
-    // Load dark mode preference from localStorage
-    const storedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setDark(storedDarkMode);
-    if (storedDarkMode) {
+    // Load dark mode preference from localStorage (if available)
+    const storedDarkMode = localStorage.getItem('darkMode');
+    const isDarkMode = storedDarkMode ? storedDarkMode === 'true' : true; // Default to true (dark mode)
+    
+    setDark(isDarkMode);
+    
+    // Apply the dark mode class based on the preference
+    if (isDarkMode) {
       document.body.classList.add('dark');
     } else {
-      document.body.classList.remove('dark'); // Ensure light mode is applied if not dark
+      document.body.classList.remove('dark');
+    }
+
+    // Sync localStorage on mount in case it wasn't set before
+    if (storedDarkMode === null) {
+      localStorage.setItem('darkMode', isDarkMode.toString());
     }
   }, []);
 
   const darkModeHandler = () => {
-    setDark(!dark);
-    document.body.classList.toggle('dark');
-    localStorage.setItem('darkMode', !dark);  // Store dark mode preference
+    const newDarkMode = !dark;
+    setDark(newDarkMode);
+    document.body.classList.toggle('dark', newDarkMode);  // Apply/remove dark mode class
+    localStorage.setItem('darkMode', newDarkMode.toString());  // Store updated preference
   };
 
   const handleStartGame = () => {

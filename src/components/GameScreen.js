@@ -7,7 +7,7 @@ const GameScreen = () => {
   const [loading, setLoading] = useState(false);
   const [difficulty, setDifficulty] = useState('easy');  // Difficulty state
   const [choiceCount, setChoiceCount] = useState(0);  // Track the number of choices made
-  const [dark, setDark] = useState(true);  // Track dark mode state
+  const [dark, setDark] = useState(false);  // Track dark mode state
   const [gameHistory, setGameHistory] = useState([]);  // Track game history
 
   const hasGameStarted = useRef(false);  // Track if the game has started
