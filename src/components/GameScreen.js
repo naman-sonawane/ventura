@@ -18,29 +18,32 @@ const GameScreen = () => {
     setDifficulty(storedDifficulty);
   }, []);
 
-  // Get dark mode preference from localStorage on initial load
   useEffect(() => {
+    // Load dark mode preference from localStorage (if available)
     const storedDarkMode = localStorage.getItem('darkMode');
-    const isDarkMode = storedDarkMode ? storedDarkMode === 'true' : false; // Default to false if not found
-    setDark(isDarkMode); // Set state based on stored preference
-
-    // Apply dark mode class to the body
+    const isDarkMode = storedDarkMode ? storedDarkMode === 'true' : true; // Default to true (dark mode)
+    
+    setDark(isDarkMode);
+    
+    // Apply the dark mode class based on the preference
     if (isDarkMode) {
       document.body.classList.add('dark');
     } else {
       document.body.classList.remove('dark');
     }
-  }, []);  // Empty dependency ensures this runs only once when the component mounts
 
-  // Save dark mode setting to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('darkMode', dark.toString());  // Store dark mode setting in localStorage
-    if (dark) {
-      document.body.classList.add('dark');  // Apply dark class if dark mode is enabled
-    } else {
-      document.body.classList.remove('dark'); // Remove dark class if light mode is enabled
+    // Sync localStorage on mount in case it wasn't set before
+    if (storedDarkMode === null) {
+      localStorage.setItem('darkMode', isDarkMode.toString());
     }
-  }, [dark]);  // Dependency array includes `dark` to trigger whenever it changes
+  }, []);
+
+  const darkModeHandler = () => {
+    const newDarkMode = !dark;
+    setDark(newDarkMode);
+    document.body.classList.toggle('dark', newDarkMode);  // Apply/remove dark mode class
+    localStorage.setItem('darkMode', newDarkMode.toString());  // Store updated preference
+  };
 
   // Function to handle AI response and parse choices
   const parseAIResponse = (response) => {
@@ -115,10 +118,7 @@ const GameScreen = () => {
     }
   }, []);  // Empty dependency array, ensures this runs only once on mount
 
-  // Toggle dark mode handler
-  const darkModeHandler = () => {
-    setDark(!dark); // Toggle dark mode
-  };
+
 
   if (!currentScene) return <div>Loading...</div>;
 
