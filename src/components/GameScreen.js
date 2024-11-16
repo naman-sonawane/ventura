@@ -5,34 +5,31 @@ import { IoMoon, IoSunny } from 'react-icons/io5';  // Moon and Sun icons
 const GameScreen = () => {
   const [currentScene, setCurrentScene] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [difficulty, setDifficulty] = useState('easy');  // Difficulty state
-  const [choiceCount, setChoiceCount] = useState(0);  // Track the number of choices made
-  const [dark, setDark] = useState(false);  // Track dark mode state
-  const [gameHistory, setGameHistory] = useState([]);  // Track game history
+  const [difficulty, setDifficulty] = useState('easy');
+  const [choiceCount, setChoiceCount] = useState(0);
+  const [dark, setDark] = useState(false);
+  const [gameHistory, setGameHistory] = useState([]);
 
   const hasGameStarted = useRef(false);  // Track if the game has started
 
-  // Get difficulty from localStorage on game start
+  // Load saved difficulty from localStorage
   useEffect(() => {
     const storedDifficulty = localStorage.getItem('gameDifficulty') || 'easy';
     setDifficulty(storedDifficulty);
   }, []);
 
+  // Load dark mode preference from localStorage
   useEffect(() => {
-    // Load dark mode preference from localStorage (if available)
     const storedDarkMode = localStorage.getItem('darkMode');
-    const isDarkMode = storedDarkMode ? storedDarkMode === 'true' : true; // Default to true (dark mode)
-    
+    const isDarkMode = storedDarkMode ? storedDarkMode === 'true' : true;
     setDark(isDarkMode);
-    
-    // Apply the dark mode class based on the preference
+
     if (isDarkMode) {
       document.body.classList.add('dark');
     } else {
       document.body.classList.remove('dark');
     }
 
-    // Sync localStorage on mount in case it wasn't set before
     if (storedDarkMode === null) {
       localStorage.setItem('darkMode', isDarkMode.toString());
     }
@@ -41,20 +38,36 @@ const GameScreen = () => {
   const darkModeHandler = () => {
     const newDarkMode = !dark;
     setDark(newDarkMode);
-    document.body.classList.toggle('dark', newDarkMode);  // Apply/remove dark mode class
-    localStorage.setItem('darkMode', newDarkMode.toString());  // Store updated preference
+    document.body.classList.toggle('dark', newDarkMode);
+    localStorage.setItem('darkMode', newDarkMode.toString());
   };
 
-  // Function to handle AI response and parse choices
+  // Load game history from localStorage
+  useEffect(() => {
+    const savedHistory = JSON.parse(localStorage.getItem('gameHistory')) || [];
+    setGameHistory(savedHistory);
+
+    if (savedHistory.length === 0 && !hasGameStarted.current) {
+      handleChoice('start');  // Start a new game if no history
+      hasGameStarted.current = true;
+    }
+  }, []);
+
+  // Save game history to localStorage
+  useEffect(() => {
+    if (gameHistory.length > 0) {
+      localStorage.setItem('gameHistory', JSON.stringify(gameHistory));
+    }
+  }, [gameHistory]);
+
   const parseAIResponse = (response) => {
     const [description, ...choices] = response.split('||');
     return { description, choices };
   };
 
-  // Function to handle player choice
   const handleChoice = async (choice) => {
     setLoading(true);
-    setChoiceCount((prevCount) => prevCount + 1);  // Increment choice count
+    setChoiceCount((prevCount) => prevCount + 1);
 
     try {
       const response = await fetch('https://ventura-1.onrender.com/', {
@@ -64,25 +77,16 @@ const GameScreen = () => {
         },
         body: JSON.stringify({
           currentChoice: choice,
-          lastScene: gameHistory[gameHistory.length - 1] || null,  // Send the last scene for history
-          difficulty: difficulty,  // Pass difficulty to the server
-          choiceCount: choiceCount + 1,  // Pass the updated choice count
-          sessionId: 'some-unique-session-id',  // Include session ID
+          gameHistory,  // Send the full game history to the server
+          difficulty,
+          choiceCount: choiceCount + 1,
         }),
       });
 
       const data = await response.json();
-
-      // Check if the game is over and handle accordingly
-      if (data.response.includes('Game Over')) {
-        setGameHistory((prev) => [...prev, { choice, response: data.response }]);
-        setCurrentScene({ description: data.response, choices: [] });  // No options for the final scene
-        return;  // No further processing
-      }
-
       const parsedResponse = parseAIResponse(data.response);
-      setGameHistory((prev) => [...prev, { choice, response: parsedResponse.description }]);  // Add to history
-      setCurrentScene(parsedResponse);  // Set new scene
+      setGameHistory((prev) => [...prev, { choice, response: parsedResponse.description }]);
+      setCurrentScene(parsedResponse);
 
     } catch (error) {
       console.error('Error:', error);
@@ -90,45 +94,33 @@ const GameScreen = () => {
     setLoading(false);
   };
 
-  // Function to split text into chunks, avoiding word breaks
+  // Split text into chunks to avoid word breaks
   const splitTextIntoChunks = (text, maxLength = 85) => {
     const chunks = [];
     let currentIndex = 0;
 
     while (currentIndex < text.length) {
       let endIndex = currentIndex + maxLength;
-
-      // If we are not at the end of the text and the word would be broken:
       if (endIndex < text.length && text[endIndex] !== ' ' && text.lastIndexOf(' ', endIndex) > currentIndex) {
-        endIndex = text.lastIndexOf(' ', endIndex);  // Split at the last space
+        endIndex = text.lastIndexOf(' ', endIndex);
       }
 
       chunks.push(text.slice(currentIndex, endIndex));
-      currentIndex = endIndex + 1;  // Move past the space
+      currentIndex = endIndex + 1;
     }
 
     return chunks;
   };
 
-  // Initial game start (only trigger the start once)
-  useEffect(() => {
-    if (!hasGameStarted.current) {  // Only trigger once
-      handleChoice('start');
-      hasGameStarted.current = true;  // Mark the game as started to prevent further triggering
-    }
-  }, []);  // Empty dependency array, ensures this runs only once on mount
-
-
-
   if (!currentScene) return <div>Loading...</div>;
 
-  const descriptionChunks = splitTextIntoChunks(currentScene.description);  // Split description into chunks
+  const descriptionChunks = splitTextIntoChunks(currentScene.description);
 
   return (
     <div className={`w-screen h-screen flex ${dark ? 'bg-zinc-800' : 'bg-white'} flex-col`}>
       <div className={`container mx-auto px-4 py-8 ${dark ? 'bg-zinc-800' : 'bg-white'} flex-1 max-w-2xl relative overflow-auto`}>
         <div className="space-y-6">
-          {/* Game History */}
+          {/* Display game history */}
           <div className="space-y-4">
             {gameHistory.map((item, index) => (
               <div key={index} className={`border-b ${dark ? 'border-white/20' : 'border-zinc-700'} pb-4`}>
@@ -138,15 +130,10 @@ const GameScreen = () => {
             ))}
           </div>
 
-          {/* Current Scene with Text Animation */}
+          {/* Current Scene */}
           <div className={`${dark ? 'bg-zinc-700' : 'bg-gray-100'} p-6 rounded-lg`}>
             {descriptionChunks.map((chunk, index) => (
-              <TextGenerateEffect
-                key={index}
-                text={chunk}
-                duration={0.3}
-                className="text-lg mb-4"
-              />
+              <TextGenerateEffect key={index} text={chunk} duration={0.3} className="text-lg mb-4" />
             ))}
 
             {/* Only show choices if there are any left */}
@@ -184,7 +171,7 @@ const GameScreen = () => {
         </p>
       </div>
 
-      {/* Dark Mode Toggle Button */}
+      {/* Dark Mode Toggle */}
       <button
         onClick={darkModeHandler}
         className={`absolute top-4 right-4 p-2 ${dark ? 'bg-zinc-700 text-white' : 'bg-zinc-300 text-zinc-800'} rounded-full hover:bg-zinc-600 dark:hover:bg-zinc-500 transition-colors`}
