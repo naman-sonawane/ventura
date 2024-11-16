@@ -5,7 +5,7 @@ import { IoMoon, IoSunny } from 'react-icons/io5';  // Moon and Sun icons
 const StartScreen = () => {
   const navigate = useNavigate();
   const [difficulty, setDifficulty] = useState('easy');
-  const [dark, setDark] = useState(true); // Change this to true for dark mode by default
+  const [dark, setDark] = useState(false); // Change this to true for dark mode by default
 
   useEffect(() => {
     // Load dark mode preference from localStorage
@@ -31,17 +31,17 @@ const StartScreen = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-zinc-800 dark:bg-zinc-100">
-      <div className="text-6xl font-bold mb-8 text-white dark:text-zinc-800">
+    <div className="flex flex-col items-center justify-center min-h-screen dark:bg-zinc-800 bg-zinc-100">
+      <div className="text-6xl font-bold mb-8 dark:text-white text-zinc-800">
         <h1>VENTURA</h1>
       </div>
   
       <div className="mb-6">
-        <label className="mr-4 text-white dark:text-zinc-800 text-xl mb-2">Choose Difficulty:</label>
+        <label className="mr-4 dark:text-white text-zinc-800 text-xl mb-2">Choose Difficulty:</label>
         <select
           value={difficulty}
           onChange={(e) => setDifficulty(e.target.value)}
-          className="px-4 py-2 bg-zinc-700 dark:bg-zinc-300 text-white dark:text-zinc-800 rounded"
+          className="px-4 py-2 dark:bg-zinc-700 bg-zinc-300 dark:text-white text-zinc-800 rounded"
         >
           <option value="easy">easy.</option>
           <option value="hard">hard.</option>
@@ -50,7 +50,7 @@ const StartScreen = () => {
   
       <button
         onClick={handleStartGame}
-        className="px-8 py-3 text-xl bg-white dark:bg-zinc-700 text-zinc-800 dark:text-white rounded hover:bg-gray-200 dark:hover:bg-zinc-600 transition-colors"
+        className="px-8 py-3 text-xl dark:bg-white bg-zinc-700 dark:text-zinc-800 text-white rounded dark:hover:bg-gray-200 hover:bg-zinc-600 transition-colors"
       >
         Begin
       </button>
@@ -58,12 +58,12 @@ const StartScreen = () => {
       {/* Dark Mode Toggle Button */}
       <button
         onClick={darkModeHandler}
-        className="absolute top-4 right-4 p-2 bg-zinc-700 dark:bg-zinc-300 text-white dark:text-zinc-800 rounded-full hover:bg-zinc-600 dark:hover:bg-zinc-500 transition-colors"
+        className="absolute top-4 right-4 p-2 dark:bg-zinc-700 bg-zinc-300 dark:text-white text-zinc-800 rounded-full dark:hover:bg-zinc-600 hover:bg-zinc-500 transition-colors"
       >
         {dark ? <IoSunny size={24} /> : <IoMoon size={24} />}
       </button>
   
-      <div className="absolute bottom-0 left-0 p-4 text-white dark:text-zinc-800">
+      <div className="absolute bottom-0 left-0 p-4 dark:text-white text-zinc-800">
         <p className="font-bold">VENTURA</p>
         <p className="text-sm">
           made by{' '}
@@ -71,7 +71,7 @@ const StartScreen = () => {
             href="https://www.namansonawane.xyz"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-white dark:text-zinc-800 hover:text-blue-300 transition-colors"
+            className="dark:text-white text-zinc-800 hover:text-blue-300 transition-colors"
           >
             naman sonawane
           </a>
