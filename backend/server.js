@@ -33,6 +33,10 @@ app.post('/', async (req, res) => {
     Do not repeat previous scenes or choices. Ensure the story progresses with new challenges, characters, or locations. Do not recycle options.
 
     Choices made: ${choiceCount}.
+
+    Format your response as:  
+    "You walk down the path, the trees parting to reveal a small clearing. A large stone is at the center. You hear faint footsteps approaching from behind." || Look around the stone || Wait and see who is approaching || Continue down the path
+    Ensure choices the scenes do not repeat and progress story.
   `;
 
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
