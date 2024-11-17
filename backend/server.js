@@ -7,11 +7,7 @@ const app = express();
 app.use(express.json()); // Make sure we can parse JSON bodies
 
 // Enable CORS for your frontend domain
-app.use(cors({
-  origin: 'https://ventura-webapp.vercel.app',  // Frontend URL
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type'],
-}));
+app.use(cors());
 
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -25,11 +21,13 @@ function generateHiddenGoal() {
     try {
       const prompt = `
         You are the master of a text-based adventure game. Your task is to create a mysterious and exciting goal for the player. 
-        The goal should be related to an adventure, mystery, or quest that the player must achieve throughout the game. 
+        The goal should be VERY SPECIFIC, related to an adventure, mystery, or quest that the player must achieve throughout the game. 
         The goal must be hidden from the player and should be used to guide the challenges and events in the game.
         Provide the goal in a short sentence without revealing it to the player. Example goals might include: 
         "Find the lost treasure of the pirate king, Harold" "Rescue the captured princess, Tina," or "Defeat the evil sorcerer." 
         Generate a goal for the player.
+
+        Note: THE GOAL MUST BE VERY SPECIFIC.
 
         Respond with only the goal text and nothing else. Do not provide any explanation.
       `;
@@ -101,10 +99,12 @@ app.post('/', async (req, res) => {
         Do NOT repeat or rephrase options that have already been used.
         Do NOT give boring options that include any of the following words: sleep, rest, hide, run away, return, remain silent, etc.
         End the game IMMEDIATELY if the player had made a bad decision (like encountering an animal, touching fire, trusting a shady person) with 0 choices and 1 dramatic ending sentence.
+        End the game IMMEDIATELY if the player accomplishes their goal and provide no options.
       `;
     }
 
     console.log('Game History Context:', context);
+    console.log(hiddenGoal)
 
     // Get the model
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
