@@ -7,7 +7,11 @@ const app = express();
 app.use(express.json()); // Make sure we can parse JSON bodies
 
 // Enable CORS for your frontend domain
-app.use(cors());
+app.use(cors({
+  origin: 'https://ventura-webapp.vercel.app',  // Frontend URL
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+}));
 
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
