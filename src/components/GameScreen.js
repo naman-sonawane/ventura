@@ -1,135 +1,203 @@
-const express = require('express');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-require('dotenv').config();
-const cors = require('cors');
+import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import TextGenerateEffect from './TextGenerate';  // Import the TextGenerateEffect
+import { IoMoon, IoSunny } from 'react-icons/io5';  // Moon and Sun icons
 
-const app = express();
-app.use(express.json()); // Make sure we can parse JSON bodies
+const GameScreen = () => {
+  const navigate = useNavigate();
+  const [currentScene, setCurrentScene] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [difficulty, setDifficulty] = useState('easy');
+  const [dark, setDark] = useState(false);
+  const [gameHistory, setGameHistory] = useState([]);
+  const [isGameRestarted, setIsGameRestarted] = useState(false); // Track game restart
 
-// Enable CORS for your frontend domain
-app.use(cors({
-  origin: 'https://ventura-webapp.vercel.app',  // Frontend URL
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type'],
-}));
+  const hasGameStarted = useRef(false);  // Track if the game has started
 
-// Initialize Gemini client
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  useEffect(() => {
+    const storedDifficulty = localStorage.getItem('gameDifficulty') || 'easy';
+    setDifficulty(storedDifficulty);
+  }, []);
 
-// This will store the hidden goal for the duration of the game
-let hiddenGoal = '';
+  useEffect(() => {
+    const storedDarkMode = localStorage.getItem('darkMode');
+    const isDarkMode = storedDarkMode ? storedDarkMode === 'true' : true;
+    setDark(isDarkMode);
 
-// Function to generate a goal dynamically
-function generateHiddenGoal() {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const prompt = `
-        You are the master of a text-based adventure game. Your task is to create a mysterious and exciting goal for the player. 
-        The goal should be related to an adventure, mystery, or quest that the player must achieve throughout the game. 
-        The goal must be hidden from the player and should be used to guide the challenges and events in the game.
-        Provide the goal in a short sentence without revealing it to the player. Example goals might include: 
-        "Find the lost treasure of the pirate king, Harold" "Rescue the captured princess, Tina," or "Defeat the evil sorcerer." 
-        Generate a goal for the player.
-
-        Respond with only the goal text and nothing else. Do not provide any explanation.
-      `;
-      
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-      const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }], 
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 50,
-        },
-      });
-
-      const goalText = result.response.text().trim();
-      resolve(goalText);  // Return the generated goal
-    } catch (error) {
-      reject('Error generating goal');
-    }
-  });
-}
-
-// POST Request to handle story generation
-app.post('/', async (req, res) => {
-  const { currentChoice, difficulty, gameHistory } = req.body;
-
-  try {
-    // If this is the first request (no game history), generate a goal
-    if (gameHistory.length === 0) {
-      hiddenGoal = await generateHiddenGoal();
-    }
-
-    // Prepare the context for the AI based on the game history
-    let context = '';
-
-    // Append game history to context if any
-    if (gameHistory && gameHistory.length > 0) {
-      gameHistory.forEach((historyItem, index) => {
-        context += `\nChoice ${index + 1}: ${historyItem.choice} -> ${historyItem.response}`;
-      });
-    }
-
-    // Define the prompt to send to the AI
-    let prompt = '';
-
-    if (gameHistory.length === 0) {
-      // New game starts here, no history
-      prompt = `
-        You are a text adventure game master.
-        The hidden goal is: "${hiddenGoal}",  and the player must achieve it. Do NOT directly inform the player of the goal immediately. 
-        Adjust the plot complexity based on difficulty: "${difficulty}". If "Easy", keep the plot simple. If "Hard", make it more complex and dangerous.
-
-        Format your response exactly as this example scene:
-        Insert the description of the first scene in a text adventure game.||Option 1 here||Option 2 here||Option 3 here
-
-        Create the first scene. (10-20 words) with 1, 2, or 3 options (depending on what feels right). Occasionally give the player items they can use later in game.
-      `;
+    if (isDarkMode) {
+      document.body.classList.add('dark');
     } else {
-      // Continue the game based on the context of previous choices
-      prompt = `
-        You are a text adventure game master. Based on the player's current choice: "${currentChoice}", generate a specific output in plot (10-20 words) with 1, 2, or 3 options (depending on what feels right). Occasionally give the player items they can use later in game.
-        Adjust the plot complexity based on difficulty: "${difficulty}". If "Easy", keep the plot simple. If "Hard", make it more complex or dangerous.
-        The player's hidden goal is: "${hiddenGoal}"
-
-        Current context (game history): ${context}
-
-        Format your response exactly as this example scene:
-        Insert the description of the first scene in a text adventure game.||Option 1 here||Option 2 here||Option 3 here
-
-        Do NOT repeat or rephrase options that have already been used.
-        Do NOT give boring options that include any of the following words: sleep, rest, hide, run away, return, remain silent, etc.
-        End the game IMMEDIATELY if the player had made a bad decision (like encountering an animal, touching fire, trusting a shady person) with 0 choices and 1 dramatic ending sentence.
-      `;
+      document.body.classList.remove('dark');
     }
 
-    console.log('Game History Context:', context);
+    if (storedDarkMode === null) {
+      localStorage.setItem('darkMode', isDarkMode.toString());
+    }
+  }, []);
 
-    // Get the model
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+  const darkModeHandler = () => {
+    const newDarkMode = !dark;
+    setDark(newDarkMode);
+    document.body.classList.toggle('dark', newDarkMode);
+    localStorage.setItem('darkMode', newDarkMode.toString());
+  };
 
-    // Generate content based on the prompt
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }], 
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 500,
-      },
-    });
+  useEffect(() => {
+    if (!isGameRestarted) {
+      const savedHistory = JSON.parse(localStorage.getItem('gameHistory')) || [];
+      setGameHistory(savedHistory);
 
-    const response = result.response;
+      if (savedHistory.length === 0 && !hasGameStarted.current) {
+        handleChoice('start');
+        hasGameStarted.current = true;
+      }
+    }
 
-    // Return the generated response
-    res.json({ response: response.text() });
+    // Reset the isGameRestarted state after loading the history
+    return () => {
+      setIsGameRestarted(false);
+    };
+  }, [isGameRestarted]);
 
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Failed to generate story' });
-  }
-});
+  useEffect(() => {
+    if (gameHistory.length > 0) {
+      localStorage.setItem('gameHistory', JSON.stringify(gameHistory));
+    }
+  }, [gameHistory]);
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  const parseAIResponse = (response) => {
+    if (typeof response === 'string') {
+      const [description, ...choices] = response.trim().split('||');
+      return { description, choices };
+    } else {
+      console.error('Expected string response, but got:', response);
+      return { description: 'Error: Unable to parse response.', choices: [] };
+    }
+  };
+
+  const handleChoice = async (choice) => {
+    setLoading(true);
+
+    try {
+      const response = await fetch('https://ventura-1.onrender.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentChoice: choice,
+          gameHistory: choice == 'start' ? [] : gameHistory, // Fix the key-value pair here
+          difficulty,
+        }),
+      });
+      
+
+      const data = await response.json();
+      const parsedResponse = parseAIResponse(data.response);
+      setGameHistory((prev) => [...prev, { choice, response: parsedResponse.description }]);
+      setCurrentScene(parsedResponse);
+
+    } catch (error) {
+      console.error('Error:', error);
+    }
+    setLoading(false);
+  };
+
+  const splitTextIntoChunks = (text, maxLength = 85) => {
+    const chunks = [];
+    let currentIndex = 0;
+
+    while (currentIndex < text.length) {
+      let endIndex = currentIndex + maxLength;
+      if (endIndex < text.length && text[endIndex] !== ' ' && text.lastIndexOf(' ', endIndex) > currentIndex) {
+        endIndex = text.lastIndexOf(' ', endIndex);
+      }
+
+      chunks.push(text.slice(currentIndex, endIndex));
+      currentIndex = endIndex + 1;
+    }
+
+    return chunks;
+  };
+
+  const handleRestart = () => {
+    localStorage.clear();  // Clear all stored values in localStorage
+    localStorage.setItem('gameDifficulty', difficulty);  // Store selected difficulty
+    navigate('/game');
+    window.location.reload();  // Reload the page
+    handleChoice('start')
+  };
+
+  if (!currentScene) return <div>Loading...</div>;
+
+  const descriptionChunks = splitTextIntoChunks(currentScene.description);
+
+  return (
+    <div className={`w-screen h-screen flex ${dark ? 'bg-zinc-800' : 'bg-white'} flex-col`}>
+      <div className={`container mx-auto px-4 py-8 ${dark ? 'bg-zinc-800' : 'bg-white'} flex-1 max-w-2xl relative overflow-auto`}>
+        <div className="space-y-6">
+          <div className="space-y-4">
+            {gameHistory.map((item, index) => (
+              <div key={index} className={`border-b ${dark ? 'border-white/20' : 'border-zinc-700'} pb-4`}>
+                <p className={`${dark ? 'text-white/60' : 'text-zinc-800/60'}`}>{item.choice}</p>
+                <p className={`${dark ? 'text-white' : 'text-zinc-800'}`}>{item.response}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className={`${dark ? 'bg-zinc-700' : 'bg-gray-100'} p-6 rounded-lg`}>
+            {descriptionChunks.map((chunk, index) => (
+              <TextGenerateEffect key={index} text={chunk} duration={0.3} className="text-lg mb-4" />
+            ))}
+
+            {currentScene.choices.length > 0 && (
+              <div className="space-y-2">
+                {currentScene.choices.map((choice, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleChoice(choice)}
+                    disabled={loading}
+                    className={`w-full p-3 ${dark ? 'bg-zinc-200 text-zinc-800 hover:bg-zinc-300' : 'bg-zinc-600 text-white hover:bg-zinc-500'} rounded transition-colors disabled:opacity-50`}
+                  >
+                    {choice}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className={`${dark ? 'text-white' : 'text-zinc-800'} p-4 mt-auto`}>
+        <p className="font-bold">VENTURA</p>
+        <p className="text-sm">
+          made by{' '}
+          <a
+            href="https://www.namansonawane.xyz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${dark ? 'text-white' : 'text-zinc-800'} hover:text-blue-300 transition-colors`}
+          >
+            naman sonawane
+          </a>
+        </p>
+      </div>
+
+      <button
+        onClick={darkModeHandler}
+        className={`absolute top-4 right-4 p-2 ${dark ? 'bg-zinc-700 text-white' : 'bg-zinc-300 text-zinc-800'} rounded-full hover:bg-zinc-600 dark:hover:bg-zinc-500 transition-colors`}
+      >
+        {dark ? <IoSunny size={24} /> : <IoMoon size={24} />}
+      </button>
+
+      <button
+        onClick={handleRestart}
+        className={`absolute bottom-4 right-4 p-3 ${dark ? 'bg-red-900 text-white' : 'bg-red-500 text-white'} rounded-lg shadow-lg hover:bg-red-700 transition-colors`}
+      >
+        Restart Game
+      </button>
+    </div>
+  );
+};
+
+export default GameScreen;
