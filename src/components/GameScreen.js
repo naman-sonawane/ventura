@@ -79,7 +79,7 @@ const GameScreen = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('https://ventura-1.onrender.com', {
+      const response = await fetch('https://ventura-1.onrender.com/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
