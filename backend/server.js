@@ -8,7 +8,7 @@ app.use(express.json()); // Make sure we can parse JSON bodies
 
 // Enable CORS for your frontend domain
 app.use(cors({
-  origin: 'https://ventura-io.xyz',  // Frontend URL after custom domain
+  origin: 'https://www.ventura-io.xyz',  // Frontend URL after custom domain
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 }));
