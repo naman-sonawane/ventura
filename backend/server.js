@@ -8,7 +8,7 @@ app.use(express.json()); // Make sure we can parse JSON bodies
 
 // Enable CORS for your frontend domain
 app.use(cors({
-  origin: 'http://localhost:3000',  // Frontend URL after custom domain
+  origin: 'https://www.ventura-io.xyz',  // Frontend URL after custom domain
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 }));
@@ -98,8 +98,8 @@ app.post('/', async (req, res) => {
       `;
     }
 
-    //console.log('Game History Context:', context);
-    //console.log('Hidden Goal:', hiddenGoal);
+    console.log('Game History Context:', context);
+    console.log('Hidden Goal:', hiddenGoal);
 
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
