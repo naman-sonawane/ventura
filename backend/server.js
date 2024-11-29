@@ -8,7 +8,7 @@ app.use(express.json()); // Make sure we can parse JSON bodies
 
 // Enable CORS for your frontend domain
 app.use(cors({
-  origin: 'https://www.ventura-io.xyz',  // Frontend URL after custom domain
+  origin: 'http://localhost:3000',  // Frontend URL after custom domain
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 }));
@@ -24,18 +24,18 @@ function generateHiddenGoal() {
   return new Promise(async (resolve, reject) => {
     try {
       const prompt = `
-        You are the master of a text-based adventure game. Your task is to create a mysterious and exciting goal for the player. 
-        The goal should be VERY SPECIFIC, related to an adventure, mystery, or quest that the player must achieve throughout the game. 
-        The goal must be hidden from the player and should be used to guide the challenges and events in the game.
-        Provide the goal in a short sentence without revealing it to the player. Example goals might include: 
-        "Find the lost treasure of the pirate king, Harold" "Rescue the captured princess, Tina," or "Defeat the evil sorcerer." 
-        Generate a goal for the player.
+        You are the master of a text-based adventure game. Your task is to create a **very specific** goal for the player that is tied to an adventure, mystery, or quest. The goal must be concrete and measurable, not something vague like "uncover the secret" or "explore the temple." The goal should require multiple steps to achieve and be achievable only by completing a series of meaningful challenges.
 
-        Note: THE GOAL MUST BE VERY SPECIFIC.
+        Do not create goals that can be achieved too easily at the beginning of the game. The goal should be something the player must work towards, and it should not be easily completed after only a few actions.
 
-        Respond with only the goal text and nothing else. Do not provide any explanation.
+        Example goals might include:
+        - "Find the hidden gemstone in the temple to break the curse."
+        - "Stop the evil sorcerer from completing the ritual before midnight."
+        - "Retrieve the enchanted map from the temple's inner sanctum."
+
+        **Your response should only be the goal itself. Do not explain it, and do not include any additional text.**
       `;
-      
+
       const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
       const result = await model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }], 
@@ -48,6 +48,7 @@ function generateHiddenGoal() {
       const goalText = result.response.text().trim();
       resolve(goalText);  // Return the generated goal
     } catch (error) {
+      console.error(error);
       reject('Error generating goal');
     }
   });
@@ -66,33 +67,23 @@ app.post('/', async (req, res) => {
     // Prepare the context for the AI based on the game history
     let context = '';
 
-    // Append game history to context if any
     if (gameHistory && gameHistory.length > 0) {
       gameHistory.forEach((historyItem, index) => {
         context += `\nChoice ${index + 1}: ${historyItem.choice} -> ${historyItem.response}`;
       });
     }
 
-    // Define the prompt to send to the AI
     let prompt = '';
-
     if (gameHistory.length === 0) {
-      // New game starts here, no history
       prompt = `
-        You are a text adventure game master.
-        The hidden goal is: "${hiddenGoal}",  and the player must achieve it. Do NOT directly inform the player of the goal immediately. 
-        Adjust the plot complexity based on difficulty: "${difficulty}". If "Easy", keep the plot simple. If "Hard", make it more complex and dangerous.
+        You are the master of a text-based adventure game. The hidden goal is: "${hiddenGoal}", and the player must achieve it. Do NOT directly inform the player of the goal immediately. Adjust the plot complexity based on difficulty: "${difficulty}". If "Easy", keep the plot simple. If "Hard", make it more complex and dangerous.
 
         Format your response exactly as this example scene:
         Insert the description of the first scene in a text adventure game.||Option 1 here||Option 2 here||Option 3 here
-
-        Create the first scene. (10-20 words) with 1, 2, or 3 options (depending on what feels right). Occasionally give the player items they can use later in game.
       `;
     } else {
-      // Continue the game based on the context of previous choices
       prompt = `
-        You are a text adventure game master. Based on the player's current choice: "${currentChoice}", generate a specific output in plot (10-20 words) with 1, 2, or 3 options (depending on what feels right). Occasionally give the player items they can use later in game.
-        Adjust the plot complexity based on difficulty: "${difficulty}". If "Easy", keep the plot simple. If "Hard", make it more complex or dangerous.
+        You are the master of a text-based adventure game. Based on the player's current choice: "${currentChoice}", generate a specific output in plot (10-20 words) with 1, 2, or 3 options (depending on what feels right). Occasionally give the player items they can use later in game. Adjust the plot complexity based on difficulty: "${difficulty}". If "Easy", keep the plot simple. If "Hard", make it more complex or dangerous.
         The player's hidden goal is: "${hiddenGoal}"
 
         Current context (game history): ${context}
@@ -107,13 +98,11 @@ app.post('/', async (req, res) => {
       `;
     }
 
-    console.log('Game History Context:', context);
-    console.log(hiddenGoal)
+    //console.log('Game History Context:', context);
+    //console.log('Hidden Goal:', hiddenGoal);
 
-    // Get the model
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
-    // Generate content based on the prompt
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }], 
       generationConfig: {
@@ -122,11 +111,13 @@ app.post('/', async (req, res) => {
       },
     });
 
-    const response = result.response;
+    const response = result.response.text().trim();
 
-    // Return the generated response
-    res.json({ response: response.text() });
+    if (!response) {
+      throw new Error('Empty response from AI model');
+    }
 
+    res.json({ response });
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: 'Failed to generate story' });
